@@ -1,0 +1,170 @@
+name: Fashion MNIST EDA
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  eda:
+    # runs-on: ubuntu-latest
+    runs-on: mlops-self-hosted
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Install Dependencies
+        run: 
+          pip install -r requirements.txt
+
+      - name: Run EDA Script
+        run: python eda.py
+
+      - name: Upload EDA Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: fashion-mnist-eda
+          path: eda/fashion_mnist_eda.html
+    
+  feature-engineering:
+    name: Feature Engineering
+    runs-on: mlops-self-hosted
+    # needs: eda  # Runs after EDA
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Feature Engineering
+        run: python feature_engineering.py
+
+      - name: Upload Processed Data
+        uses: actions/upload-artifact@v4
+        with:
+          name: fashion-mnist-features
+          path: feature_engineering/
+
+  explainability:
+    name: Explainability Analysis
+    runs-on: mlops-self-hosted
+    needs: feature-engineering  # Runs after Feature Engineering
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download Processed Data
+        uses: actions/download-artifact@v4
+        with:
+          name: fashion-mnist-features
+          path: feature_engineering/
+
+      - name: Run Explainability Analysis
+        run: python explainability.py
+
+      - name: Upload SHAP Plot
+        uses: actions/upload-artifact@v4
+        with:
+          name: shap-explainability
+          path: explainability/shap_summary.png
+
+  model-selection:
+    name: Model Selection & Hyperparameter Optimization
+    runs-on: mlops-self-hosted
+    needs: feature-engineering
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download Processed Data
+        uses: actions/download-artifact@v4
+        with:
+          name: fashion-mnist-features
+          path: feature_engineering/
+
+      - name: Run Model Selection & Hyperparameter Optimization
+        run: python model_selection.py
+
+      - name: Upload Best Model & Hyperparameters
+        uses: actions/upload-artifact@v4
+        with:
+          name: best-model-selection
+          path: model_selection/
+          
+  model-monitoring:
+    name: Model Monitoring & Performance Tracking
+    runs-on: mlops-self-hosted
+    needs: model-selection  # Runs after Model Selection
+    # needs: feature-engineering
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install tensorflow cpu
+        run: pip install tensorflow-cpu
+        
+      - name: Download Processed Data
+        uses: actions/download-artifact@v4
+        with:
+          name: fashion-mnist-features
+          path: feature_engineering/
+
+      - name: Download Best Model
+        uses: actions/download-artifact@v4
+        with:
+          name: best-model-selection
+          path: model_selection/
+
+      - name: Run Model Monitoring & Performance Tracking
+        run: python model_monitoring.py
+
+      - name: Upload Performance Metrics
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-performance-metrics
+          path: model_monitoring/performance_metrics.json
+
+      - name: Upload Drift Detection Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-drift-report
+          path: model_monitoring/drift_report.html

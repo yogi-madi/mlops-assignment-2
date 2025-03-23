@@ -1,0 +1,16 @@
+pandas
+numpy
+tensorflow
+scikit-learn==1.3.2
+ydata_profiling
+shap
+matplotlib
+seaborn
+pydantic-settings
+tpot
+h2o
+optuna
+mlflow
+plotly==5.13.1
+narwhals==0.9.29
+evidently
